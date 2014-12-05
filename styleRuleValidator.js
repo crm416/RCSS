@@ -1,10 +1,12 @@
-var isValidCSSProps = require('valid-css-props');
+/* @flow */
 
-function isValidProp(prop) {
+var isValidCSSProps: (prop:string) => boolean = require('valid-css-props');
+
+function isValidProp(prop: string): boolean {
   return isValidCSSProps(prop);
 }
 
-function isValidValue(value) {
+function isValidValue(value: number | string): boolean {
   return value !== '' && (typeof value === 'number' || typeof value === 'string');
 }
 

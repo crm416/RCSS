@@ -1,21 +1,23 @@
-var escape = require('escape-html');
-var mediaQueryValidator = require('valid-media-queries');
+/* @flow */
+
+var escape: (html:any) => string = require('escape-html');
+var mediaQueryValidator: (query:string) => boolean = require('valid-media-queries');
 var styleRuleValidator = require('./styleRuleValidator');
 
 var _uppercasePattern = /([A-Z])/g;
 var msPattern = /^ms-/;
 
-function hyphenateProp(string) {
+function hyphenateProp(prop: string): string {
   // MozTransition -> -moz-transition
   // msTransition -> -ms-transition. Notice the lower case m
   // http://modernizr.com/docs/#prefixed
   // thanks a lot IE
-  return string.replace(_uppercasePattern, '-$1')
+  return prop.replace(_uppercasePattern, '-$1')
     .toLowerCase()
     .replace(msPattern, '-ms-');
 }
 
-function escapeValueForProp(value, prop) {
+function escapeValueForProp(value: number | string, prop: string): string {
   // 'content' is a special property that must be quoted
   if (prop === 'content') {
     return '"' + value + '"';
@@ -24,7 +26,7 @@ function escapeValueForProp(value, prop) {
   return escape(value);
 }
 
-function ruleToString(propName, value) {
+function ruleToString(propName: string, value: string): string {
   var cssPropName = hyphenateProp(propName);
   if (!styleRuleValidator.isValidProp(cssPropName)) {
     console.warn(
@@ -38,7 +40,7 @@ function ruleToString(propName, value) {
   return cssPropName + ':' + escapeValueForProp(value, cssPropName) + ';';
 }
 
-function _rulesToStringHeadless(styleObj) {
+function _rulesToStringHeadless(styleObj): string {
   var markup = '';
 
   for (var key in styleObj) {
@@ -54,7 +56,7 @@ function _rulesToStringHeadless(styleObj) {
   return markup;
 }
 
-function rulesToString(className, styleObj) {
+function rulesToString(className: string, styleObj: any): string {
   var markup = '';
   var pseudos = '';
   var mediaQueries = '';

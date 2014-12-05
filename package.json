@@ -2,7 +2,7 @@
   "name": "rcss",
   "version": "0.1.4",
   "description": "Turn your JavaScript objects into CSS classes.",
-  "main": "index.js",
+  "main": "./index.js",
   "directories": {
     "example": "examples"
   },

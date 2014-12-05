@@ -1,11 +1,11 @@
+/* @flow */
+
 var cascade = require('./cascade');
 var registerClass = require('./registerClass');
 var styleRuleConverter = require('./styleRuleConverter');
+var registry = require('./getRegistry')();
 
-var global = Function("return this")();
-global.__RCSS_0_registry = global.__RCSS_0_registry || {};
-
-function descriptorsToString(styleDescriptor) {
+function descriptorsToString(styleDescriptor: StyleObjType): string {
   return styleRuleConverter.rulesToString(
     styleDescriptor.className,
     styleDescriptor.style
@@ -16,14 +16,13 @@ var RCSS = {
   cascade: cascade,
   registerClass: registerClass,
 
-  injectAll: function() {
+  injectAll: function(): void {
     var tag = document.createElement('style');
     tag.innerHTML = RCSS.getStylesString();
     document.getElementsByTagName('head')[0].appendChild(tag);
   },
 
-  getStylesString: function() {
-    var registry = global.__RCSS_0_registry;
+  getStylesString: function(): string {
     var str = '';
     for (var key in registry) {
       if (!registry.hasOwnProperty(key)) {
@@ -31,7 +30,7 @@ var RCSS = {
       }
       str += descriptorsToString(registry[key]);
     }
-    global.__RCSS_0_registry = {};
+    registry = {};
     return str;
   }
 };

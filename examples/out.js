@@ -1,20 +1,15 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-var DeepMerge = require('deep-merge/multiple');
-var merge = DeepMerge(mergeStrategy);
-
-function mergeStrategy(a, b) {
-  return b;
-}
+var deepExtend = require('deep-extend');
 
 // currently `cascade` does a simple merge. In the future, we might have smarter
 // logic here for perf reasons.
 function cascade() {
-  return merge([].slice.call(arguments));
+  return deepExtend.bind(null, {}).apply(null, arguments);
 }
 
 module.exports = cascade;
 
-},{"deep-merge/multiple":147}],2:[function(require,module,exports){
+},{"deep-extend":147}],2:[function(require,module,exports){
 var RCSS = require('../');
 
 // Credits to Bootstrap.
@@ -49,7 +44,7 @@ var button = {
 // `object of the format: {className: 'bla', style: yourOriginalButtonObj}.
 module.exports = RCSS.registerClass(button);
 
-},{"../":145}],3:[function(require,module,exports){
+},{"../":146}],3:[function(require,module,exports){
 /** @jsx React.DOM */
 
 var React = require('React');
@@ -84,7 +79,7 @@ var App = React.createClass({displayName: 'App',
 RCSS.injectAll();
 React.renderComponent(App({}), document.body);
 
-},{"../":145,"./button":2,"./primaryButton":144,"React":138}],4:[function(require,module,exports){
+},{"../":146,"./button":2,"./primaryButton":144,"React":138}],4:[function(require,module,exports){
 /**
  * Copyright 2013-2014 Facebook, Inc.
  *
@@ -18255,7 +18250,7 @@ Buffer.prototype.copy = function (target, target_start, start, end) {
 
   var len = end - start
 
-  if (len < 100 || !Buffer.TYPED_ARRAY_SUPPORT) {
+  if (len < 1000 || !Buffer.TYPED_ARRAY_SUPPORT) {
     for (var i = 0; i < len; i++) {
       target[i + target_start] = this[i + start]
     }
@@ -18324,6 +18319,7 @@ var BP = Buffer.prototype
  * Augment a Uint8Array *instance* (not the Uint8Array class!) with Buffer methods
  */
 Buffer._augment = function (arr) {
+  arr.constructor = Buffer
   arr._isBuffer = true
 
   // save reference to original Uint8Array get/set methods before overwriting
@@ -18793,13 +18789,23 @@ var primaryButton = RCSS.cascade(buttonStyle.style, {
 
 module.exports = RCSS.registerClass(primaryButton);
 
-},{"../":145,"./button":2}],145:[function(require,module,exports){
+},{"../":146,"./button":2}],145:[function(require,module,exports){
+/* @flow */
+
+module.exports = function() {
+    var root = this;
+    var global = root.Function('return this')();
+    global.__RCSS_0_registry = global.__RCSS_0_registry || {};
+    return global.__RCSS_0_registry;
+}
+
+},{}],146:[function(require,module,exports){
+/* @flow */
+
 var cascade = require('./cascade');
 var registerClass = require('./registerClass');
 var styleRuleConverter = require('./styleRuleConverter');
-
-var global = Function("return this")();
-global.__RCSS_0_registry = global.__RCSS_0_registry || {};
+var registry = require('./getRegistry')();
 
 function descriptorsToString(styleDescriptor) {
   return styleRuleConverter.rulesToString(
@@ -18819,7 +18825,6 @@ var RCSS = {
   },
 
   getStylesString: function() {
-    var registry = global.__RCSS_0_registry;
     var str = '';
     for (var key in registry) {
       if (!registry.hasOwnProperty(key)) {
@@ -18827,92 +18832,108 @@ var RCSS = {
       }
       str += descriptorsToString(registry[key]);
     }
-    global.__RCSS_0_registry = {};
+    registry = {};
     return str;
   }
 };
 
 module.exports = RCSS;
 
-},{"./cascade":1,"./registerClass":155,"./styleRuleConverter":156}],146:[function(require,module,exports){
-var extend = require("xtend")
+},{"./cascade":1,"./getRegistry":145,"./registerClass":154,"./styleRuleConverter":155}],147:[function(require,module,exports){
+(function (Buffer){
+/*!
+ * Node.JS module "Deep Extend"
+ * @description Recursive object extending.
+ * @author Viacheslav Lotsmanov (unclechu) <lotsmanov89@gmail.com>
+ * @license MIT
+ *
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2013 Viacheslav Lotsmanov
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of
+ * this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+ * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+ * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+ * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
-module.exports = DeepMerge
+/**
+ * Extening object that entered in first argument.
+ * Returns extended object or false if have no target object or incorrect type.
+ * If you wish to clone object, simply use that:
+ *  deepExtend({}, yourObj_1, [yourObj_N]) - first arg is new empty object
+ */
+var deepExtend = module.exports = function (/*obj_1, [obj_2], [obj_N]*/) {
+	if (arguments.length < 1 || typeof arguments[0] !== 'object') {
+		return false;
+	}
 
-function DeepMerge(merger) {
-    return deepmerge
+	if (arguments.length < 2) return arguments[0];
 
-    function deepmerge(target, source, key) {
-        if (Array.isArray(source) && Array.isArray(target)) {
-            return merger(target, source, key)
-        } else if (isObject(source) && isObject(target)) {
-            var result = extend({}, target)
-            Object.keys(source).forEach(merge)
-            return result
-        } else {
-            return merger(target, source, key)
-        }
+	var target = arguments[0];
 
-        function merge(key) {
-            var sourceValue = source[key]
-            var targetValue = target[key]
+	// convert arguments to array and cut off target object
+	var args = Array.prototype.slice.call(arguments, 1);
 
-            if (!(key in target)) {
-                if (isObject(sourceValue)) {
-                    result[key] = deepmerge({}, sourceValue, key)
-                } else {
-                    result[key] = sourceValue
-                }
-            } else {
-                result[key] = deepmerge(targetValue, sourceValue, key)
-            }
-        }
-    }
+	var key, val, src, clone, tmpBuf;
+
+	args.forEach(function (obj) {
+		if (typeof obj !== 'object') return;
+
+		for (key in obj) {
+			if ( ! (key in obj)) continue;
+
+			src = target[key];
+			val = obj[key];
+
+			if (val === target) continue;
+
+			if (typeof val !== 'object' || val === null) {
+				target[key] = val;
+				continue;
+			} else if (val instanceof Buffer) {
+				tmpBuf = new Buffer(val.length);
+				val.copy(tmpBuf);
+				target[key] = tmpBuf;
+				continue;
+			} else if (val instanceof Date) {
+				target[key] = new Date(val.getTime());
+				continue;
+			}
+
+			if (typeof src !== 'object' || src === null) {
+				clone = (Array.isArray(val)) ? [] : {};
+				target[key] = deepExtend(clone, val);
+				continue;
+			}
+
+			if (Array.isArray(val)) {
+				clone = (Array.isArray(src)) ? src : [];
+			} else {
+				clone = (!Array.isArray(src)) ? src : {};
+			}
+
+			target[key] = deepExtend(clone, val);
+		}
+	});
+
+	return target;
 }
 
-function isObject(x) {
-    return typeof x === "object" && x !== null
-}
-
-},{"xtend":148}],147:[function(require,module,exports){
-var DeepMerge = require('./index.js')
-
-module.exports = MultipleMerge
-
-function MultipleMerge(merger) {
-    var merge = DeepMerge(merger)
-
-    return multiMerge
-
-    function multiMerge(objects) {
-        var result = objects[0]
-        var sources = objects.slice(1)
-
-        sources.forEach(function (source) {
-            result = merge(result, source)
-        })
-
-        return result
-    }
-}
-
-},{"./index.js":146}],148:[function(require,module,exports){
-module.exports = extend
-
-function extend(target) {
-    for (var i = 1; i < arguments.length; i++) {
-        var source = arguments[i],
-            keys = Object.keys(source)
-
-        for (var j = 0; j < keys.length; j++) {
-            var name = keys[j]
-            target[name] = source[name]
-        }
-    }
-
-    return target
-}
-},{}],149:[function(require,module,exports){
+}).call(this,require("buffer").Buffer)
+},{"buffer":139}],148:[function(require,module,exports){
 /**
  * Escape special characters in the given string of html.
  *
@@ -18930,7 +18951,7 @@ module.exports = function(html) {
     .replace(/>/g, '&gt;');
 }
 
-},{}],150:[function(require,module,exports){
+},{}],149:[function(require,module,exports){
 var charenc = {
   // UTF-8 encoding
   utf8: {
@@ -18965,7 +18986,7 @@ var charenc = {
 
 module.exports = charenc;
 
-},{}],151:[function(require,module,exports){
+},{}],150:[function(require,module,exports){
 (function() {
   var base64map
       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/',
@@ -19063,7 +19084,7 @@ module.exports = charenc;
   module.exports = crypt;
 })();
 
-},{}],152:[function(require,module,exports){
+},{}],151:[function(require,module,exports){
 (function (Buffer){
 (function() {
   var crypt = require('crypt'),
@@ -19149,7 +19170,7 @@ module.exports = charenc;
 })();
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":139,"charenc":150,"crypt":151}],153:[function(require,module,exports){
+},{"buffer":139,"charenc":149,"crypt":150}],152:[function(require,module,exports){
 var _validCSSProps = {
   'alignment-adjust': true,
   'alignment-baseline': true,
@@ -19406,7 +19427,7 @@ module.exports = function(prop) {
   return !!_validCSSProps[prop];
 };
 
-},{}],154:[function(require,module,exports){
+},{}],153:[function(require,module,exports){
 function isValidRatio(ratio) {
     var re = /\d+\/\d+/;
     return !!ratio.match(re);
@@ -19605,8 +19626,11 @@ function isValidMediaQueryList(mediaQuery) {
 
 module.exports = isValidMediaQueryList
 
-},{}],155:[function(require,module,exports){
+},{}],154:[function(require,module,exports){
+/* @flow */
+
 var sha1 = require('sha1');
+var registry = require('./getRegistry')();
 
 function hashStyle(styleObj) {
   return sha1(JSON.stringify(styleObj));
@@ -19617,21 +19641,18 @@ function generateValidCSSClassName(styleId) {
   return 'c' + styleId;
 }
 
-var global = Function("return this")();
-global.__RCSS_0_registry = global.__RCSS_0_registry || {};
-
 function registerClass(styleObj) {
   var styleId = generateValidCSSClassName(hashStyle(styleObj));
 
-  if (global.__RCSS_0_registry[styleId] == null) {
-    global.__RCSS_0_registry[styleId] = {
+  if (registry[styleId] == null) {
+    registry[styleId] = {
       className: styleId,
       style: styleObj
     };
   }
 
   // Simple shallow clone
-  var styleObj = global.__RCSS_0_registry[styleId];
+  var styleObj = registry[styleId];
   return {
     className: styleObj.className,
     style: styleObj.style
@@ -19640,7 +19661,9 @@ function registerClass(styleObj) {
 
 module.exports = registerClass;
 
-},{"sha1":152}],156:[function(require,module,exports){
+},{"./getRegistry":145,"sha1":151}],155:[function(require,module,exports){
+/* @flow */
+
 var escape = require('escape-html');
 var mediaQueryValidator = require('valid-media-queries');
 var styleRuleValidator = require('./styleRuleValidator');
@@ -19648,12 +19671,12 @@ var styleRuleValidator = require('./styleRuleValidator');
 var _uppercasePattern = /([A-Z])/g;
 var msPattern = /^ms-/;
 
-function hyphenateProp(string) {
+function hyphenateProp(prop) {
   // MozTransition -> -moz-transition
   // msTransition -> -ms-transition. Notice the lower case m
   // http://modernizr.com/docs/#prefixed
   // thanks a lot IE
-  return string.replace(_uppercasePattern, '-$1')
+  return prop.replace(_uppercasePattern, '-$1')
     .toLowerCase()
     .replace(msPattern, '-ms-');
 }
@@ -19732,7 +19755,9 @@ module.exports = {
   rulesToString: rulesToString
 };
 
-},{"./styleRuleValidator":157,"escape-html":149,"valid-media-queries":154}],157:[function(require,module,exports){
+},{"./styleRuleValidator":156,"escape-html":148,"valid-media-queries":153}],156:[function(require,module,exports){
+/* @flow */
+
 var isValidCSSProps = require('valid-css-props');
 
 function isValidProp(prop) {
@@ -19748,4 +19773,4 @@ module.exports = {
   isValidValue: isValidValue
 };
 
-},{"valid-css-props":153}]},{},[3])
+},{"valid-css-props":152}]},{},[3])

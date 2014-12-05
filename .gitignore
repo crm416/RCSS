@@ -1,4 +1,5 @@
 .DS_Store
+.flowconfig
 node_modules
 Thumbs.db
 examples/node_modules
