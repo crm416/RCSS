@@ -1,8 +1,8 @@
 declare class validCSSPropsType {
-    [prop:string]: any
+    [prop:string]: number | string
 }
 
 declare class StyleObjType {
     className: string;
-    style: any
+    style: validCSSPropsType
 };
